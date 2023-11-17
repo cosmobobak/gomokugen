@@ -17,7 +17,7 @@ impl std::ops::Neg for Player {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Board<const SIDE_LENGTH: usize> {
     cells: [[Player; SIDE_LENGTH]; SIDE_LENGTH],
     last_move: Option<Move>,
@@ -29,9 +29,16 @@ pub struct Move {
     index: u16,
 }
 
+/// A gomoku board of size `SIDE_LENGTH` by `SIDE_LENGTH`.
 impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
+    #[allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap)]
     const N_I: isize = SIDE_LENGTH as isize;
 
+    /// Creates a new board with no pieces on it.
+    /// 
+    /// # Panics
+    /// 
+    /// Panics if `SIDE_LENGTH` is greater than 19.
     #[must_use]
     pub fn new() -> Self {
         assert!(SIDE_LENGTH <= 19, "Only boards of up to 19x19 are supported.");
@@ -42,7 +49,9 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
         }
     }
 
+    /// Generates all possible moves on the board and calls `callback` with each one.
     pub fn generate_moves(&self, mut callback: impl FnMut(Move) -> bool) {
+        #![allow(clippy::cast_possible_truncation)]
         for (i, c) in self.cells.iter().flatten().enumerate() {
             if *c == Player::None && callback(Move { index: i as u16 }) {
                 return;
@@ -50,14 +59,17 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
         }
     }
 
-    pub fn make_move(&mut self, player: Player, index: u16) {
+    /// Applies a move to the board.
+    pub fn make_move(&mut self, Move { index }: Move) {
+        #![allow(clippy::cast_possible_truncation)]
         let i = (index / SIDE_LENGTH as u16) as usize;
         let j = (index % SIDE_LENGTH as u16) as usize;
-        self.cells[i][j] = player;
+        self.cells[i][j] = self.turn();
         self.last_move = Some(Move { index });
         self.ply += 1;
     }
 
+    /// Returns the player whose turn it is.
     #[must_use]
     pub const fn turn(&self) -> Player {
         match self.ply % 2 {
@@ -67,6 +79,7 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
     }
 
     fn row_along<const D_X: isize, const D_Y: isize>(&self, row: usize, col: usize) -> bool {
+        #![allow(clippy::cast_sign_loss, clippy::cast_possible_wrap)]
         let mut count = 1;
         let last_piece = -self.turn();
 
@@ -128,8 +141,13 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
         false
     }
 
+    /// Returns the outcome of the game, if any.
+    /// 
+    /// `None` means the game is still in progress.
+    /// `Some(Player::None)` means the game is a draw.
     #[must_use]
     pub fn outcome(&self) -> Option<Player> {
+        #![allow(clippy::cast_possible_truncation)]
         let Move { index } = self.last_move?;
         let row = (index / SIDE_LENGTH as u16) as usize;
         let col = (index % SIDE_LENGTH as u16) as usize;

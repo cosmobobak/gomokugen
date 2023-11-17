@@ -1,18 +1,11 @@
 #![warn(clippy::all, clippy::pedantic, clippy::nursery, clippy::cargo)]
 
 pub mod board;
-
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+pub mod perft;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+    
 }
