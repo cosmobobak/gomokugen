@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Player {
     /// Neither player has a piece on this square.
@@ -34,6 +36,14 @@ impl Move {
     #[must_use]
     pub const fn is_null(&self) -> bool {
         self.index == u16::MAX
+    }
+}
+
+impl Display for Move {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let row = self.index / 19;
+        let col = self.index % 19;
+        write!(f, "{}{}", (b'A' + u8::try_from(row).unwrap()) as char, col + 1)
     }
 }
 
