@@ -1,7 +1,10 @@
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Player {
+    /// Neither player has a piece on this square.
     None,
+    /// The first player.
     X,
+    /// The second player.
     O,
 }
 
@@ -184,5 +187,15 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
 impl<const SIDE_LENGTH: usize> Default for Board<SIDE_LENGTH> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn first_player_is_x() {
+        let board = Board::<19>::new();
+        assert_eq!(board.turn(), Player::X);
     }
 }
