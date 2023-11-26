@@ -17,16 +17,28 @@ impl std::ops::Neg for Player {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Move {
+    index: u16,
+}
+
+impl Move {
+    #[must_use]
+    pub const fn null() -> Self {
+        Self { index: u16::MAX }
+    }
+
+    #[must_use]
+    pub const fn is_null(&self) -> bool {
+        self.index == u16::MAX
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Board<const SIDE_LENGTH: usize> {
     cells: [[Player; SIDE_LENGTH]; SIDE_LENGTH],
     last_move: Option<Move>,
     ply: u16,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Move {
-    index: u16,
 }
 
 /// A gomoku board of size `SIDE_LENGTH` by `SIDE_LENGTH`.
@@ -60,12 +72,13 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
     }
 
     /// Applies a move to the board.
-    pub fn make_move(&mut self, Move { index }: Move) {
+    pub fn make_move(&mut self, mv @ Move { index }: Move) {
         #![allow(clippy::cast_possible_truncation)]
+        debug_assert!(!mv.is_null(), "Cannot make null move");
         let i = (index / SIDE_LENGTH as u16) as usize;
         let j = (index % SIDE_LENGTH as u16) as usize;
         self.cells[i][j] = self.turn();
-        self.last_move = Some(Move { index });
+        self.last_move = Some(mv);
         self.ply += 1;
     }
 
