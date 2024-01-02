@@ -1,7 +1,12 @@
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+use std::fmt::Display;
+
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Player {
+    /// Neither player has a piece on this square.
     None,
+    /// The first player.
     X,
+    /// The second player.
     O,
 }
 
@@ -17,16 +22,36 @@ impl std::ops::Neg for Player {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+pub struct Move {
+    index: u16,
+}
+
+impl Move {
+    #[must_use]
+    pub const fn null() -> Self {
+        Self { index: u16::MAX }
+    }
+
+    #[must_use]
+    pub const fn is_null(&self) -> bool {
+        self.index == u16::MAX
+    }
+}
+
+impl Display for Move {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let row = self.index / 19;
+        let col = self.index % 19;
+        write!(f, "{}{}", (b'A' + u8::try_from(row).unwrap()) as char, col + 1)
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Board<const SIDE_LENGTH: usize> {
     cells: [[Player; SIDE_LENGTH]; SIDE_LENGTH],
     last_move: Option<Move>,
     ply: u16,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Move {
-    index: u16,
 }
 
 /// A gomoku board of size `SIDE_LENGTH` by `SIDE_LENGTH`.
@@ -69,12 +94,13 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
     }
 
     /// Applies a move to the board.
-    pub fn make_move(&mut self, Move { index }: Move) {
+    pub fn make_move(&mut self, mv @ Move { index }: Move) {
         #![allow(clippy::cast_possible_truncation)]
+        debug_assert!(!mv.is_null(), "Cannot make null move");
         let i = (index / SIDE_LENGTH as u16) as usize;
         let j = (index % SIDE_LENGTH as u16) as usize;
         self.cells[i][j] = self.turn();
-        self.last_move = Some(Move { index });
+        self.last_move = Some(mv);
         self.ply += 1;
     }
 
@@ -180,5 +206,15 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
 impl<const SIDE_LENGTH: usize> Default for Board<SIDE_LENGTH> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+mod tests {
+    use super::*;
+
+    #[test]
+    fn first_player_is_x() {
+        let board = Board::<19>::new();
+        assert_eq!(board.turn(), Player::X);
     }
 }
