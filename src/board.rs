@@ -23,11 +23,11 @@ impl std::ops::Neg for Player {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Move {
+pub struct Move<const SIDE_LENGTH: usize> {
     index: u16,
 }
 
-impl Move {
+impl<const SIDE_LENGTH: usize> Move<SIDE_LENGTH> {
     #[must_use]
     pub const fn null() -> Self {
         Self { index: u16::MAX }
@@ -44,10 +44,10 @@ impl Move {
     }
 }
 
-impl Display for Move {
+impl<const SIDE_LENGTH: usize> Display for Move<SIDE_LENGTH> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let row = self.index / 19;
-        let col = self.index % 19;
+        let row = self.index / SIDE_LENGTH as u16;
+        let col = self.index % SIDE_LENGTH as u16;
         write!(f, "{}{}", (b'A' + u8::try_from(row).unwrap()) as char, col + 1)
     }
 }
@@ -55,7 +55,7 @@ impl Display for Move {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Board<const SIDE_LENGTH: usize> {
     cells: [[Player; SIDE_LENGTH]; SIDE_LENGTH],
-    last_move: Option<Move>,
+    last_move: Option<Move<SIDE_LENGTH>>,
     ply: u16,
 }
 
@@ -81,7 +81,7 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
 
     /// Generates all possible moves on the board and calls `callback` with each one.
     /// Iteration short-circuits if `callback` returns `true`.
-    pub fn generate_moves(&self, mut callback: impl FnMut(Move) -> bool) {
+    pub fn generate_moves(&self, mut callback: impl FnMut(Move<SIDE_LENGTH>) -> bool) {
         #![allow(clippy::cast_possible_truncation)]
         for (i, c) in self.cells.iter().flatten().enumerate() {
             if *c == Player::None && callback(Move { index: i as u16 }) {
@@ -100,7 +100,7 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
     }
 
     /// Applies a move to the board.
-    pub fn make_move(&mut self, mv @ Move { index }: Move) {
+    pub fn make_move(&mut self, mv @ Move { index }: Move<SIDE_LENGTH>) {
         #![allow(clippy::cast_possible_truncation)]
         debug_assert!(!mv.is_null(), "Cannot make null move");
         let i = (index / SIDE_LENGTH as u16) as usize;
