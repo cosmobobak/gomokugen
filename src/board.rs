@@ -221,9 +221,9 @@ impl<const SIDE_LENGTH: usize> Display for Board<SIDE_LENGTH> {
         for (i, c) in self.cells.iter().flatten().enumerate() {
             if i % SIDE_LENGTH == 0 {
                 row -= 1;
-                write!(f, "{} ", row + 1)?;
+                write!(f, "{} ", (b'A' + row as u8) as char)?;
             }
-            write!(f, "{}", match c {
+            write!(f, "{} ", match c {
                 Player::None => '.',
                 Player::X => 'X',
                 Player::O => 'O',
@@ -234,7 +234,7 @@ impl<const SIDE_LENGTH: usize> Display for Board<SIDE_LENGTH> {
         }
         write!(f, "  ")?;
         for i in 0..SIDE_LENGTH {
-            write!(f, "{}", i + 1)?;
+            write!(f, "{} ", i + 1)?;
         }
         writeln!(f)
     }
