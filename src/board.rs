@@ -217,10 +217,10 @@ impl<const SIDE_LENGTH: usize> Default for Board<SIDE_LENGTH> {
 
 impl<const SIDE_LENGTH: usize> Display for Board<SIDE_LENGTH> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut row = SIDE_LENGTH;
+        let mut row = 0;
         for (i, c) in self.cells.iter().flatten().enumerate() {
             if i % SIDE_LENGTH == 0 {
-                row -= 1;
+                row += 1;
                 write!(f, "{} ", (b'A' + row as u8) as char)?;
             }
             write!(f, "{} ", match c {
