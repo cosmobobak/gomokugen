@@ -37,6 +37,11 @@ impl Move {
     pub const fn is_null(&self) -> bool {
         self.index == u16::MAX
     }
+
+    #[must_use]
+    pub const fn index(&self) -> usize {
+        self.index as usize
+    }
 }
 
 impl Display for Move {
@@ -75,6 +80,7 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
     }
 
     /// Generates all possible moves on the board and calls `callback` with each one.
+    /// Iteration short-circuits if `callback` returns `true`.
     pub fn generate_moves(&self, mut callback: impl FnMut(Move) -> bool) {
         #![allow(clippy::cast_possible_truncation)]
         for (i, c) in self.cells.iter().flatten().enumerate() {
@@ -210,10 +216,9 @@ impl<const SIDE_LENGTH: usize> Default for Board<SIDE_LENGTH> {
 }
 
 mod tests {
-    use super::*;
-
     #[test]
     fn first_player_is_x() {
+        use super::*;
         let board = Board::<19>::new();
         assert_eq!(board.turn(), Player::X);
     }
