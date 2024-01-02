@@ -59,6 +59,15 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
         }
     }
 
+    /// Iterates over all filled cells on the board and calls `callback` with each one.
+    pub fn feature_map(&self, mut callback: impl FnMut(usize, Player) -> bool) {
+        for (i, c) in self.cells.iter().flatten().enumerate() {
+            if *c != Player::None && callback(i, *c) {
+                return;
+            }
+        }
+    }
+
     /// Applies a move to the board.
     pub fn make_move(&mut self, Move { index }: Move) {
         #![allow(clippy::cast_possible_truncation)]
