@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, Debug};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Player {
@@ -49,6 +49,14 @@ impl<const SIDE_LENGTH: usize> Display for Move<SIDE_LENGTH> {
         let row = self.index / SIDE_LENGTH as u16;
         let col = self.index % SIDE_LENGTH as u16;
         write!(f, "{}{}", (b'A' + u8::try_from(row).unwrap()) as char, col + 1)
+    }
+}
+
+impl<const SIDE_LENGTH: usize> Debug for Move<SIDE_LENGTH> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let row = self.index / SIDE_LENGTH as u16;
+        let col = self.index % SIDE_LENGTH as u16;
+        write!(f, "{}{} ({})", (b'A' + u8::try_from(row).unwrap()) as char, col + 1, self.index)
     }
 }
 
