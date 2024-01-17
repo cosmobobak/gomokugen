@@ -279,7 +279,7 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
         out
     }
 
-    fn push_random(&mut self, mut rng: impl FnMut(usize, usize) -> usize) {
+    pub fn make_random_move(&mut self, mut rng: impl FnMut(usize, usize) -> usize) {
         #![allow(clippy::cast_precision_loss)]
         let filled_factor = f64::from(self.ply) / (SIDE_LENGTH * SIDE_LENGTH) as f64;
         // if the board is mostly full, generate moves and then select.
