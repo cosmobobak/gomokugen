@@ -51,6 +51,7 @@ impl<const SIDE_LENGTH: usize> Move<SIDE_LENGTH> {
 }
 
 impl<const SIDE_LENGTH: usize> Display for Move<SIDE_LENGTH> {
+    #[allow(clippy::cast_possible_truncation)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let row = self.index / SIDE_LENGTH as u16;
         let col = self.index % SIDE_LENGTH as u16;
@@ -64,6 +65,7 @@ impl<const SIDE_LENGTH: usize> Display for Move<SIDE_LENGTH> {
 }
 
 impl<const SIDE_LENGTH: usize> Debug for Move<SIDE_LENGTH> {
+    #[allow(clippy::cast_possible_truncation)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let row = self.index / SIDE_LENGTH as u16;
         let col = self.index % SIDE_LENGTH as u16;
@@ -74,6 +76,32 @@ impl<const SIDE_LENGTH: usize> Debug for Move<SIDE_LENGTH> {
             col + 1,
             self.index
         )
+    }
+}
+
+impl<const SIDE_LENGTH: usize> FromStr for Move<SIDE_LENGTH> {
+    type Err = &'static str;
+
+    #[allow(clippy::cast_possible_truncation)]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = s.as_bytes();
+        if bytes.len() != 2 && bytes.len() != 3 {
+            return Err("Invalid move string, must be 2 or 3 characters");
+        }
+        let row = bytes[0].to_ascii_uppercase();
+        if row < b'A' || row > b'A' + SIDE_LENGTH as u8 {
+            return Err("Invalid row in move string");
+        }
+        let col = bytes
+            .get(2)
+            .map_or(bytes[1] - b'0', |&b| b - b'0' + (bytes[1] - b'0') * 10)
+            .checked_sub(1)
+            .ok_or("Invalid column in move string")?;
+        let index = u16::from(row - b'A') * SIDE_LENGTH as u16 + u16::from(col);
+        if index >= SIDE_LENGTH as u16 * SIDE_LENGTH as u16 {
+            return Err("Invalid index in move string");
+        }
+        Ok(Self { index })
     }
 }
 
@@ -448,5 +476,16 @@ mod tests {
         let board = Board::<7>::from_str(fen).unwrap();
         let fen2 = board.fen();
         assert_eq!(fen, fen2);
+    }
+
+    #[test]
+    fn moves_round_trip() {
+        use super::*;
+        
+        for index in 0..19 * 19u16 {
+            let mv = Move { index };
+            let mv2 = Move::<19>::from_str(&mv.to_string()).unwrap();
+            assert_eq!(mv, mv2);
+        }
     }
 }
