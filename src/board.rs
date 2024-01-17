@@ -4,6 +4,8 @@ use std::{
     str::FromStr,
 };
 
+use smallvec::SmallVec;
+
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Player {
     /// Neither player has a piece on this square.
@@ -275,6 +277,34 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
         out.push(' ');
         out.push_str(&self.ply.to_string());
         out
+    }
+
+    fn push_random(&mut self, mut rng: impl FnMut(usize, usize) -> usize) {
+        #![allow(clippy::cast_precision_loss)]
+        let filled_factor = f64::from(self.ply) / (SIDE_LENGTH * SIDE_LENGTH) as f64;
+        // if the board is mostly full, generate moves and then select.
+        // otherwise, just guess moves until we find an empty square.
+        if filled_factor > 0.95 {
+            let mut moves = SmallVec::<[Move<SIDE_LENGTH>; 19 * 19]>::new();
+            self.generate_moves(|mv| {
+                moves.push(mv);
+                false
+            });
+            let index = rng(0, moves.len());
+            self.make_move(moves[index]);
+            return;
+        }
+        // we expect this loop to run only a few times
+        // (at most 95% of the board is full, so we expect to find an empty square in 20 tries)
+        let index = loop {
+            let index = rng(0, SIDE_LENGTH * SIDE_LENGTH);
+            if self.cells[index / SIDE_LENGTH][index % SIDE_LENGTH] == Player::None {
+                break index;
+            }
+        };
+        self.make_move(Move {
+            index: index.try_into().expect("Index out of range"),
+        });
     }
 }
 
