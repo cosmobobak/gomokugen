@@ -1,4 +1,8 @@
-use std::fmt::{Display, Debug};
+use std::{
+    fmt::{Debug, Display},
+    hash::Hash,
+    str::FromStr,
+};
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Player {
@@ -48,7 +52,12 @@ impl<const SIDE_LENGTH: usize> Display for Move<SIDE_LENGTH> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let row = self.index / SIDE_LENGTH as u16;
         let col = self.index % SIDE_LENGTH as u16;
-        write!(f, "{}{}", (b'A' + u8::try_from(row).unwrap()) as char, col + 1)
+        write!(
+            f,
+            "{}{}",
+            (b'A' + u8::try_from(row).unwrap()) as char,
+            col + 1
+        )
     }
 }
 
@@ -56,15 +65,35 @@ impl<const SIDE_LENGTH: usize> Debug for Move<SIDE_LENGTH> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let row = self.index / SIDE_LENGTH as u16;
         let col = self.index % SIDE_LENGTH as u16;
-        write!(f, "{}{} ({})", (b'A' + u8::try_from(row).unwrap()) as char, col + 1, self.index)
+        write!(
+            f,
+            "{}{} ({})",
+            (b'A' + u8::try_from(row).unwrap()) as char,
+            col + 1,
+            self.index
+        )
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug)]
 pub struct Board<const SIDE_LENGTH: usize> {
     cells: [[Player; SIDE_LENGTH]; SIDE_LENGTH],
     last_move: Option<Move<SIDE_LENGTH>>,
     ply: u16,
+}
+
+impl<const SIDE_LENGTH: usize> PartialEq for Board<SIDE_LENGTH> {
+    fn eq(&self, other: &Self) -> bool {
+        self.cells == other.cells
+    }
+}
+
+impl<const SIDE_LENGTH: usize> Eq for Board<SIDE_LENGTH> {}
+
+impl<const SIDE_LENGTH: usize> Hash for Board<SIDE_LENGTH> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.cells.hash(state);
+    }
 }
 
 /// A gomoku board of size `SIDE_LENGTH` by `SIDE_LENGTH`.
@@ -73,13 +102,16 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
     const N_I: isize = SIDE_LENGTH as isize;
 
     /// Creates a new board with no pieces on it.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// Panics if `SIDE_LENGTH` is greater than 19.
     #[must_use]
     pub fn new() -> Self {
-        assert!(SIDE_LENGTH <= 19, "Only boards of up to 19x19 are supported.");
+        assert!(
+            SIDE_LENGTH <= 19,
+            "Only boards of up to 19x19 are supported."
+        );
         Self {
             cells: [[Player::None; SIDE_LENGTH]; SIDE_LENGTH],
             last_move: None,
@@ -191,7 +223,7 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
     }
 
     /// Returns the outcome of the game, if any.
-    /// 
+    ///
     /// `None` means the game is still in progress.
     /// `Some(Player::None)` means the game is a draw.
     #[must_use]
@@ -215,6 +247,35 @@ impl<const SIDE_LENGTH: usize> Board<SIDE_LENGTH> {
             None
         }
     }
+
+    /// The FEN string for the current board state.
+    #[must_use]
+    pub fn fen(&self) -> String {
+        let mut out = String::new();
+        for row in &self.cells {
+            let mut count = 0;
+            for c in row {
+                match c {
+                    Player::None => out.push('.'),
+                    Player::X => out.push('x'),
+                    Player::O => out.push('o'),
+                }
+                count += 1;
+            }
+            assert!(count == SIDE_LENGTH, "Invalid board state");
+            out.push('/');
+        }
+        out.pop();
+        out.push(' ');
+        out.push(match self.turn() {
+            Player::X => 'x',
+            Player::O => 'o',
+            Player::None => panic!("No player to move"),
+        });
+        out.push(' ');
+        out.push_str(&self.ply.to_string());
+        out
+    }
 }
 
 impl<const SIDE_LENGTH: usize> Default for Board<SIDE_LENGTH> {
@@ -231,11 +292,15 @@ impl<const SIDE_LENGTH: usize> Display for Board<SIDE_LENGTH> {
                 write!(f, "{} ", (b'A' + row as u8) as char)?;
                 row += 1;
             }
-            write!(f, "{} ", match c {
-                Player::None => '.',
-                Player::X => 'X',
-                Player::O => 'O',
-            })?;
+            write!(
+                f,
+                "{} ",
+                match c {
+                    Player::None => '.',
+                    Player::X => 'X',
+                    Player::O => 'O',
+                }
+            )?;
             if i % SIDE_LENGTH == SIDE_LENGTH - 1 {
                 writeln!(f)?;
             }
@@ -248,11 +313,110 @@ impl<const SIDE_LENGTH: usize> Display for Board<SIDE_LENGTH> {
     }
 }
 
+impl<const SIDE_LENGTH: usize> FromStr for Board<SIDE_LENGTH> {
+    type Err = &'static str;
+
+    /// Parses a FEN string variant for gomoku.
+    /// an example 7x7 fen string would be:
+    /// `x......o/......../......../......../......../......../o......x x 4`,
+    /// meaning that there are four pieces placed (in the corners)
+    /// and x is to move next.
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut out = Self::new();
+        let mut parts = s.split_whitespace();
+        let Some(rows) = parts.next().map(|s| s.split('/')) else {
+            return Err("No board part found in FEN string");
+        };
+        let Some(turn) = parts.next().and_then(|s| s.chars().next()) else {
+            return Err("No turn part found in FEN string");
+        };
+        let turn = match turn {
+            'x' => Player::X,
+            'o' => Player::O,
+            _ => return Err("Invalid turn part found in FEN string"),
+        };
+        let Some(ply) = parts.next().and_then(|s| s.parse::<u16>().ok()) else {
+            return Err("No ply part found in FEN string");
+        };
+        out.ply = ply;
+        if out.turn() != turn {
+            return Err("Turn part does not match ply part in FEN string");
+        }
+        for (i, row) in rows.enumerate() {
+            let mut col = 0;
+            for c in row.chars() {
+                if col >= SIDE_LENGTH {
+                    return Err("Too many columns in FEN string");
+                }
+                match c {
+                    'x' => out.cells[i][col] = Player::X,
+                    'o' => out.cells[i][col] = Player::O,
+                    '.' => out.cells[i][col] = Player::None,
+                    _ => return Err("Invalid character in FEN string"),
+                }
+                col += 1;
+            }
+            if col != SIDE_LENGTH {
+                return Err("Too few columns in FEN string");
+            }
+        }
+        Ok(out)
+    }
+}
+
 mod tests {
     #[test]
     fn first_player_is_x() {
         use super::*;
         let board = Board::<19>::new();
         assert_eq!(board.turn(), Player::X);
+    }
+
+    #[test]
+    fn second_player_is_o() {
+        use super::*;
+        let mut board = Board::<19>::new();
+        board.make_move(Move { index: 0 });
+        assert_eq!(board.turn(), Player::O);
+    }
+
+    #[test]
+    fn fen_string_round_trip_startpos() {
+        use super::*;
+        let board = Board::<19>::new();
+        let fen = board.fen();
+        let board2 = Board::<19>::from_str(&fen).unwrap();
+        assert_eq!(board, board2);
+    }
+
+    #[test]
+    fn fen_string_round_trip_7x7() {
+        use super::*;
+        let mut board = Board::<7>::new();
+        board.make_move(Move { index: 0 });
+        board.make_move(Move { index: 48 });
+        let fen = board.fen();
+        let board2 = Board::<7>::from_str(&fen).unwrap();
+        assert_eq!(board, board2);
+    }
+
+    #[test]
+    fn fen_string_round_trip_19x19() {
+        use super::*;
+        let mut board = Board::<19>::new();
+        board.make_move(Move { index: 0 });
+        board.make_move(Move { index: 360 });
+        let fen = board.fen();
+        let board2 = Board::<19>::from_str(&fen).unwrap();
+        assert_eq!(board, board2);
+    }
+
+    #[test]
+    fn fen_string_round_trip_alt() {
+        use super::*;
+        let fen = "x.....o/......./......./......./......./......./o.....x x 4";
+        let board = Board::<7>::from_str(fen).unwrap();
+        let fen2 = board.fen();
+        assert_eq!(fen, fen2);
     }
 }
