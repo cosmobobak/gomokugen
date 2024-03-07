@@ -481,7 +481,7 @@ mod tests {
     #[test]
     fn moves_round_trip() {
         use super::*;
-        
+
         for index in 0..19 * 19u16 {
             let mv = Move { index };
             let mv2 = Move::<19>::from_str(&mv.to_string()).unwrap();

@@ -64,3 +64,17 @@ pub fn perft_cached<const BOARD_SIZE: usize, S: BuildHasher>(
 
     count
 }
+
+pub fn generate_depth_n_fens<const BOARD_SIZE: usize>(board: Board<BOARD_SIZE>, mut fen_receiver: impl FnMut(String) + Copy, depth: u8) {
+    if depth == 0 {
+        fen_receiver(board.fen());
+        return;
+    }
+
+    board.generate_moves(|mv| {
+        let mut board = board;
+        board.make_move(mv);
+        generate_depth_n_fens(board, fen_receiver, depth - 1);
+        false
+    });
+}
