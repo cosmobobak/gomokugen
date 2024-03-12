@@ -97,7 +97,7 @@ impl<const SIDE_LENGTH: usize> FromStr for Move<SIDE_LENGTH> {
             .map_or(bytes[1] - b'0', |&b| b - b'0' + (bytes[1] - b'0') * 10)
             .checked_sub(1)
             .ok_or("Invalid column in move string")?;
-        let index = u16::from(row - b'A') * SIDE_LENGTH as u16 + u16::from(col);
+        let index = u16::from(col) * SIDE_LENGTH as u16 + u16::from(row - b'A');
         if index >= SIDE_LENGTH as u16 * SIDE_LENGTH as u16 {
             return Err("Invalid index in move string");
         }

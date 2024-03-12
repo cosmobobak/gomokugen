@@ -5,6 +5,10 @@ fn main() {
 
     println!("Starting position (9x9): \n{}", Board::<9>::default());
     println!("Starting position (15x15): \n{}", Board::<15>::default());
+    let mut b = Board::<9>::default();
+    // play f3
+    b.make_move("f3".parse().unwrap());
+    println!("After f3: \n{}", b);
 
     // // perft depth 4 on a 15x15 board:
     // let start_time = std::time::Instant::now();
