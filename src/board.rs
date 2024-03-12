@@ -342,32 +342,112 @@ impl<const SIDE_LENGTH: usize> Default for Board<SIDE_LENGTH> {
     }
 }
 
+// impl Display for Board {
+//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+//         const BLD: &str = "\x1b[1m";
+//         const RED: &str = "\x1b[31m";
+//         const BLU: &str = "\x1b[34m";
+//         const RST: &str = "\x1b[0m";
+//         for rank in (0u8..7).rev() {
+//             // writeln!(f, " +---+---+---+---+---+---+---+")?;
+//             if rank == 6 {
+//                 writeln!(f, " ╭───┬───┬───┬───┬───┬───┬───╮")?;
+//             } else {
+//                 writeln!(f, " ├───┼───┼───┼───┼───┼───┼───┤")?;
+//             }
+
+//             for file in 0u8..7 {
+//                 let sq = Square::from_rank_file(rank, file);
+//                 write!(
+//                     f,
+//                     " │ {}",
+//                     if self.wall_at(sq) {
+//                         "-".into()
+//                     } else {
+//                         match self.player_at(sq) {
+//                             Some(Player::White) => format!("{BLD}{RED}X{RST}"),
+//                             Some(Player::Black) => format!("{BLD}{BLU}O{RST}"),
+//                             None => " ".into(),
+//                         }
+//                     }
+//                 )?;
+//             }
+
+//             writeln!(f, " │ {}", rank + 1)?;
+//         }
+
+//         // writeln!(f, " +---+---+---+---+---+---+---+")?;
+//         writeln!(f, " ╰───┴───┴───┴───┴───┴───┴───╯")?;
+//         writeln!(f, "   a   b   c   d   e   f   g")?;
+//         writeln!(f)?;
+
+//         write!(
+//             f,
+//             "{} to move",
+//             if self.turn() == Player::White {
+//                 format!("{BLD}{RED}Red{RST} [X]")
+//             } else {
+//                 format!("{BLD}{BLU}Blue{RST} [O]")
+//             }
+//         )
+//     }
+// }
+
 impl<const SIDE_LENGTH: usize> Display for Board<SIDE_LENGTH> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut row = 0;
-        for (i, c) in self.cells.iter().flatten().enumerate() {
-            if i % SIDE_LENGTH == 0 {
-                write!(f, "{} ", (b'A' + row as u8) as char)?;
-                row += 1;
-            }
-            write!(
-                f,
-                "{} ",
-                match c {
-                    Player::None => '.',
-                    Player::X => 'X',
-                    Player::O => 'O',
-                }
-            )?;
-            if i % SIDE_LENGTH == SIDE_LENGTH - 1 {
-                writeln!(f)?;
-            }
+        const BLD: &str = "\x1b[1m";
+        const RED: &str = "\x1b[31m";
+        const BLU: &str = "\x1b[34m";
+        const RST: &str = "\x1b[0m";
+        let mut header = String::from(" ╭");
+        for _ in 0..SIDE_LENGTH - 1 {
+            header.push_str("───┬");
         }
-        write!(f, "  ")?;
-        for i in 0..SIDE_LENGTH {
-            write!(f, "{} ", i + 1)?;
+        header.push_str("───╮");
+        let mut footer = String::from(" ╰");
+        for _ in 0..SIDE_LENGTH - 1 {
+            footer.push_str("───┴");
         }
-        writeln!(f)
+        footer.push_str("───╯");
+        let mut mid_sep = String::from(" ├");
+        for _ in 0..SIDE_LENGTH - 1 {
+            mid_sep.push_str("───┼");
+        }
+        mid_sep.push_str("───┤");
+        writeln!(f, "{header}")?;
+        for rank in (0..SIDE_LENGTH).rev() {
+            if rank != SIDE_LENGTH - 1 {
+                writeln!(f, "{mid_sep}")?;
+            }
+            // write!(f, " │")?;
+            for file in 0..SIDE_LENGTH {
+                write!(
+                    f,
+                    " │ {}",
+                    match self.cells[rank][file] {
+                        Player::None => " ".into(),
+                        Player::X => format!("{BLD}{RED}X{RST}"),
+                        Player::O => format!("{BLD}{BLU}O{RST}"),
+                    }
+                )?;
+            }
+            writeln!(f, " │ {}", rank + 1)?;
+        }
+        writeln!(f, "{footer}")?;
+
+        for file in 0..SIDE_LENGTH {
+            write!(f, "   {}", (b'A' + u8::try_from(file).unwrap()) as char)?;
+        }
+
+        write!(
+            f,
+            "\n{} to move",
+            if self.turn() == Player::X {
+                format!("{BLD}{RED}Red{RST} [X]")
+            } else {
+                format!("{BLD}{BLU}Blue{RST} [O]")
+            }
+        )
     }
 }
 

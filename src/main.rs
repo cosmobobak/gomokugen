@@ -3,6 +3,9 @@ use gomokugen::{board::Board, perft};
 fn main() {
     // run benchmarks...
 
+    println!("Starting position (9x9): \n{}", Board::<9>::default());
+    println!("Starting position (15x15): \n{}", Board::<15>::default());
+
     // // perft depth 4 on a 15x15 board:
     // let start_time = std::time::Instant::now();
     // let count = perft::perft(board::Board::<15>::new(), 4);
