@@ -53,8 +53,8 @@ impl<const SIDE_LENGTH: usize> Move<SIDE_LENGTH> {
 impl<const SIDE_LENGTH: usize> Display for Move<SIDE_LENGTH> {
     #[allow(clippy::cast_possible_truncation)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let row = self.index / SIDE_LENGTH as u16;
-        let col = self.index % SIDE_LENGTH as u16;
+        let row = self.index % SIDE_LENGTH as u16;
+        let col = self.index / SIDE_LENGTH as u16;
         write!(
             f,
             "{}{}",
@@ -67,8 +67,8 @@ impl<const SIDE_LENGTH: usize> Display for Move<SIDE_LENGTH> {
 impl<const SIDE_LENGTH: usize> Debug for Move<SIDE_LENGTH> {
     #[allow(clippy::cast_possible_truncation)]
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let row = self.index / SIDE_LENGTH as u16;
-        let col = self.index % SIDE_LENGTH as u16;
+        let row = self.index % SIDE_LENGTH as u16;
+        let col = self.index / SIDE_LENGTH as u16;
         write!(
             f,
             "{}{} ({})",
